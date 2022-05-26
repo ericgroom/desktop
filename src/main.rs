@@ -4,11 +4,25 @@ use windows::{
     Win32::Foundation::{WPARAM, LPARAM, BOOL, HWND},
 };
 
+use bevy::prelude::*;
+
 fn main() {
     unsafe {
         let window = get_workerw();
         println!("{:?}", window);
     }
+    App::new()
+        .add_plugins(MinimalPlugins)
+        .add_plugin(bevy::log::LogPlugin)
+        .add_plugin(TransformPlugin)
+        .add_plugin(bevy::hierarchy::HierarchyPlugin)
+        .add_plugin(bevy::diagnostic::DiagnosticsPlugin)
+        .add_plugin(bevy::asset::AssetPlugin)
+        .add_plugin(bevy::window::WindowPlugin { add_primary_window: false, exit_on_close: true })
+        .add_plugin(bevy::render::RenderPlugin)
+        .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
+        .add_plugin(bevy::pbr::PbrPlugin)
+        ;
 }
 
 static mut WORKER_W: Option<HWND> = None;

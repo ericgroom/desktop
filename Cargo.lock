@@ -1212,6 +1212,7 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "bevy",
  "raw-window-handle",
  "windows",

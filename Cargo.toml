@@ -9,6 +9,7 @@ edition = "2021"
 bevy = { git = "https://github.com/bevyengine/bevy.git", branch = "main" }
 winit = "0.26.1"
 raw-window-handle = "0.4.3"
+approx = { version = "0.5.0", default-features = false }
 
 [dependencies.windows]
 version = "0.37.0"

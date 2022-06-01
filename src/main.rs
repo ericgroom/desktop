@@ -1,3 +1,5 @@
+mod mwinit;
+
 use windows::{
     Win32::UI::WindowsAndMessaging::{FindWindowW, SendMessageTimeoutW, SMTO_NORMAL, EnumWindows, FindWindowExW, GWLP_HINSTANCE, GetWindowLongPtrW},
     core::PCWSTR,
@@ -32,18 +34,19 @@ fn main() {
         .add_plugin(bevy::hierarchy::HierarchyPlugin)
         .add_plugin(bevy::diagnostic::DiagnosticsPlugin)
         .add_plugin(bevy::asset::AssetPlugin)
-        .add_plugin(bevy::window::WindowPlugin { add_primary_window: false, close_when_requested: false, exit_on_all_closed: false })
+        .add_plugin(bevy::window::WindowPlugin { add_primary_window: true, close_when_requested: false, exit_on_all_closed: false })
         .add_plugin(bevy::input::InputPlugin)
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
         .add_plugin(bevy::pbr::PbrPlugin)
         .add_plugin(bevy::sprite::SpritePlugin)
-        .add_plugin(WinitPlugin)
-        .add_startup_system(create_main_window)
+        .add_plugin(crate::mwinit::MWinitPlugin)
+        // .add_plugin(WinitPlugin)
+        // .add_startup_system(create_main_window)
         // .add_plugin(wallpaper_plugin)
         .add_startup_system(setup_camera)
         .add_system(draw_circle)
-        .add_plugin(LogWindowsPlugin)
+        // .add_plugin(LogWindowsPlugin)
         .run()
         ;
 }
@@ -84,12 +87,25 @@ impl Plugin for WallpaperWindowPlugin {
         .init_resource::<bevy::winit::WinitSettings>()
         .set_runner(runner)
         .insert_non_send_resource(winit::event_loop::EventLoop::new())
-        .add_startup_system(create_main_window)
         ;
+
+        // let window_id = WindowId::primary();
+
+        // let mut create_window_events = app.world.resource_mut::<bevy::ecs::event::Events<bevy::window::CreateWindow>>();
+        // create_window_events.send(bevy::window::CreateWindow {
+        //     id: window_id,
+        //     descriptor: bevy::window::WindowDescriptor {
+        //         width: 800.0,
+        //         height: 600.0,
+        //         present_mode: bevy::window::PresentMode::Immediate,
+        //         title: "test".into(),
+        //         ..default()
+        //     }
+        // });
 
         // let mut windows = app.world.get_resource_mut::<bevy::window::Windows>().expect("this should run after windows is created");
         // let descriptor = WindowDescriptor::default();
-        // let id =  bevy::window::WindowId::new();
+        // let id =  bevy::window::WindowId::primary();
         // let window = bevy::window::Window::new(
         //     id,
         //     &descriptor,

@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.7"
+bevy = { git = "https://github.com/bevyengine/bevy.git", branch = "main" }
+winit = "0.26.1"
+raw-window-handle = "0.4.3"
 
 [dependencies.windows]
 version = "0.37.0"

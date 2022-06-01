@@ -1,4 +1,3 @@
-mod converters;
 mod winit_config;
 mod winit_windows;
 
@@ -108,34 +107,6 @@ fn change_window(
                     let window = winit_windows.get_window(id).unwrap();
                     window.set_resizable(resizable);
                 }
-                bevy::window::WindowCommand::SetDecorations { decorations } => {
-                    let window = winit_windows.get_window(id).unwrap();
-                    window.set_decorations(decorations);
-                }
-                bevy::window::WindowCommand::SetCursorIcon { icon } => {
-                    let window = winit_windows.get_window(id).unwrap();
-                    window.set_cursor_icon(converters::convert_cursor_icon(icon));
-                }
-                bevy::window::WindowCommand::SetCursorLockMode { locked } => {
-                    let window = winit_windows.get_window(id).unwrap();
-                    window
-                        .set_cursor_grab(locked)
-                        .unwrap_or_else(|e| error!("Unable to un/grab cursor: {}", e));
-                }
-                bevy::window::WindowCommand::SetCursorVisibility { visible } => {
-                    let window = winit_windows.get_window(id).unwrap();
-                    window.set_cursor_visible(visible);
-                }
-                bevy::window::WindowCommand::SetCursorPosition { position } => {
-                    let window = winit_windows.get_window(id).unwrap();
-                    let inner_size = window.inner_size().to_logical::<f32>(window.scale_factor());
-                    window
-                        .set_cursor_position(winit::dpi::LogicalPosition::new(
-                            position.x,
-                            inner_size.height - position.y,
-                        ))
-                        .unwrap_or_else(|e| error!("Unable to set cursor position: {}", e));
-                }
                 bevy::window::WindowCommand::SetMaximized { maximized } => {
                     let window = winit_windows.get_window(id).unwrap();
                     window.set_maximized(maximized);
@@ -174,6 +145,9 @@ fn change_window(
                     removed_windows.push(id);
                     // No need to run any further commands - this drops the rest of the commands, although the `bevy::window::Window` will be dropped later anyway
                     break;
+                }
+                e => {
+                    println!("ignored event: {:?}", e);
                 }
             }
         }
@@ -363,11 +337,6 @@ pub fn winit_runner_with(mut app: App) {
                             world.resource_mut::<Events<WindowCloseRequested>>();
                         window_close_requested_events.send(WindowCloseRequested { id: window_id });
                     }
-                    WindowEvent::KeyboardInput { ref input, .. } => {
-                        let mut keyboard_input_events =
-                            world.resource_mut::<Events<KeyboardInput>>();
-                        keyboard_input_events.send(converters::convert_keyboard_input(input));
-                    }
                     WindowEvent::CursorMoved { position, .. } => {
                         let mut cursor_moved_events = world.resource_mut::<Events<CursorMoved>>();
                         let winit_window = winit_windows.get_window(window_id).unwrap();
@@ -383,66 +352,6 @@ pub fn winit_runner_with(mut app: App) {
                         cursor_moved_events.send(CursorMoved {
                             id: window_id,
                             position: (physical_position / window.scale_factor()).as_vec2(),
-                        });
-                    }
-                    WindowEvent::CursorEntered { .. } => {
-                        let mut cursor_entered_events =
-                            world.resource_mut::<Events<CursorEntered>>();
-                        cursor_entered_events.send(CursorEntered { id: window_id });
-                    }
-                    WindowEvent::CursorLeft { .. } => {
-                        let mut cursor_left_events = world.resource_mut::<Events<CursorLeft>>();
-                        window.update_cursor_physical_position_from_backend(None);
-                        cursor_left_events.send(CursorLeft { id: window_id });
-                    }
-                    WindowEvent::MouseInput { state, button, .. } => {
-                        let mut mouse_button_input_events =
-                            world.resource_mut::<Events<MouseButtonInput>>();
-                        mouse_button_input_events.send(MouseButtonInput {
-                            button: converters::convert_mouse_button(button),
-                            state: converters::convert_element_state(state),
-                        });
-                    }
-                    WindowEvent::MouseWheel { delta, .. } => match delta {
-                        event::MouseScrollDelta::LineDelta(x, y) => {
-                            let mut mouse_wheel_input_events =
-                                world.resource_mut::<Events<MouseWheel>>();
-                            mouse_wheel_input_events.send(MouseWheel {
-                                unit: MouseScrollUnit::Line,
-                                x,
-                                y,
-                            });
-                        }
-                        event::MouseScrollDelta::PixelDelta(p) => {
-                            let mut mouse_wheel_input_events =
-                                world.resource_mut::<Events<MouseWheel>>();
-                            mouse_wheel_input_events.send(MouseWheel {
-                                unit: MouseScrollUnit::Pixel,
-                                x: p.x as f32,
-                                y: p.y as f32,
-                            });
-                        }
-                    },
-                    WindowEvent::Touch(touch) => {
-                        let mut touch_input_events = world.resource_mut::<Events<TouchInput>>();
-
-                        let mut location = touch.location.to_logical(window.scale_factor());
-
-                        // On a mobile window, the start is from the top while on PC/Linux/OSX from
-                        // bottom
-                        if cfg!(target_os = "android") || cfg!(target_os = "ios") {
-                            let window_height = windows.primary().height();
-                            location.y = window_height - location.y;
-                        }
-                        touch_input_events.send(converters::convert_touch_input(touch, location));
-                    }
-                    WindowEvent::ReceivedCharacter(c) => {
-                        let mut char_input_events =
-                            world.resource_mut::<Events<ReceivedCharacter>>();
-
-                        char_input_events.send(ReceivedCharacter {
-                            id: window_id,
-                            char: c,
                         });
                     }
                     WindowEvent::ScaleFactorChanged {
@@ -502,24 +411,6 @@ pub fn winit_runner_with(mut app: App) {
                             id: window_id,
                             focused,
                         });
-                    }
-                    WindowEvent::DroppedFile(path_buf) => {
-                        let mut events = world.resource_mut::<Events<FileDragAndDrop>>();
-                        events.send(FileDragAndDrop::DroppedFile {
-                            id: window_id,
-                            path_buf,
-                        });
-                    }
-                    WindowEvent::HoveredFile(path_buf) => {
-                        let mut events = world.resource_mut::<Events<FileDragAndDrop>>();
-                        events.send(FileDragAndDrop::HoveredFile {
-                            id: window_id,
-                            path_buf,
-                        });
-                    }
-                    WindowEvent::HoveredFileCancelled => {
-                        let mut events = world.resource_mut::<Events<FileDragAndDrop>>();
-                        events.send(FileDragAndDrop::HoveredFileCancelled { id: window_id });
                     }
                     WindowEvent::Moved(position) => {
                         let position = ivec2(position.x, position.y);

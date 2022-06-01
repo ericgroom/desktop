@@ -273,172 +273,172 @@ pub fn winit_runner_with(mut app: App) {
                               event_loop: &EventLoopWindowTarget<()>,
                               control_flow: &mut ControlFlow| {
         match event {
-            event::Event::NewEvents(start) => {
-                let winit_config = app.world.resource::<WinitSettings>();
-                let windows = app.world.resource::<Windows>();
-                let focused = windows.iter().any(|w| w.is_focused());
-                // Check if either the `WaitUntil` timeout was triggered by winit, or that same
-                // amount of time has elapsed since the last app update. This manual check is needed
-                // because we don't know if the criteria for an app update were met until the end of
-                // the frame.
-                let auto_timeout_reached = matches!(start, StartCause::ResumeTimeReached { .. });
-                let now = Instant::now();
-                let manual_timeout_reached = match winit_config.update_mode(focused) {
-                    UpdateMode::Continuous => false,
-                    UpdateMode::Reactive { max_wait }
-                    | UpdateMode::ReactiveLowPower { max_wait } => {
-                        now.duration_since(winit_state.last_update) >= *max_wait
-                    }
-                };
-                // The low_power_event state and timeout must be reset at the start of every frame.
-                winit_state.low_power_event = false;
-                winit_state.timeout_reached = auto_timeout_reached || manual_timeout_reached;
-            }
-            event::Event::WindowEvent {
-                event,
-                window_id: winit_window_id,
-                ..
-            } => {
-                let world = app.world.cell();
-                let winit_windows = world.non_send_resource_mut::<WinitWindows>();
-                let mut windows = world.resource_mut::<Windows>();
-                let window_id =
-                    if let Some(window_id) = winit_windows.get_window_id(winit_window_id) {
-                        window_id
-                    } else {
-                        warn!(
-                            "Skipped event for unknown winit Window Id {:?}",
-                            winit_window_id
-                        );
-                        return;
-                    };
+            // event::Event::NewEvents(start) => {
+            //     let winit_config = app.world.resource::<WinitSettings>();
+            //     let windows = app.world.resource::<Windows>();
+            //     let focused = windows.iter().any(|w| w.is_focused());
+            //     // Check if either the `WaitUntil` timeout was triggered by winit, or that same
+            //     // amount of time has elapsed since the last app update. This manual check is needed
+            //     // because we don't know if the criteria for an app update were met until the end of
+            //     // the frame.
+            //     let auto_timeout_reached = matches!(start, StartCause::ResumeTimeReached { .. });
+            //     let now = Instant::now();
+            //     let manual_timeout_reached = match winit_config.update_mode(focused) {
+            //         UpdateMode::Continuous => false,
+            //         UpdateMode::Reactive { max_wait }
+            //         | UpdateMode::ReactiveLowPower { max_wait } => {
+            //             now.duration_since(winit_state.last_update) >= *max_wait
+            //         }
+            //     };
+            //     // The low_power_event state and timeout must be reset at the start of every frame.
+            //     winit_state.low_power_event = false;
+            //     winit_state.timeout_reached = auto_timeout_reached || manual_timeout_reached;
+            // }
+            // event::Event::WindowEvent {
+            //     event,
+            //     window_id: winit_window_id,
+            //     ..
+            // } => {
+            //     let world = app.world.cell();
+            //     let winit_windows = world.non_send_resource_mut::<WinitWindows>();
+            //     let mut windows = world.resource_mut::<Windows>();
+            //     let window_id =
+            //         if let Some(window_id) = winit_windows.get_window_id(winit_window_id) {
+            //             window_id
+            //         } else {
+            //             warn!(
+            //                 "Skipped event for unknown winit Window Id {:?}",
+            //                 winit_window_id
+            //             );
+            //             return;
+            //         };
 
-                let window = if let Some(window) = windows.get_mut(window_id) {
-                    window
-                } else {
-                    // If we're here, this window was previously opened
-                    info!("Skipped event for closed window: {:?}", window_id);
-                    return;
-                };
-                winit_state.low_power_event = true;
+            //     let window = if let Some(window) = windows.get_mut(window_id) {
+            //         window
+            //     } else {
+            //         // If we're here, this window was previously opened
+            //         info!("Skipped event for closed window: {:?}", window_id);
+            //         return;
+            //     };
+            //     winit_state.low_power_event = true;
 
-                match event {
-                    WindowEvent::Resized(size) => {
-                        window.update_actual_size_from_backend(size.width, size.height);
-                        let mut resize_events = world.resource_mut::<Events<WindowResized>>();
-                        resize_events.send(WindowResized {
-                            id: window_id,
-                            width: window.width(),
-                            height: window.height(),
-                        });
-                    }
-                    WindowEvent::CloseRequested => {
-                        let mut window_close_requested_events =
-                            world.resource_mut::<Events<WindowCloseRequested>>();
-                        window_close_requested_events.send(WindowCloseRequested { id: window_id });
-                    }
-                    WindowEvent::CursorMoved { position, .. } => {
-                        let mut cursor_moved_events = world.resource_mut::<Events<CursorMoved>>();
-                        let winit_window = winit_windows.get_window(window_id).unwrap();
-                        let inner_size = winit_window.inner_size();
+            //     match event {
+            //         WindowEvent::Resized(size) => {
+            //             // window.update_actual_size_from_backend(size.width, size.height);
+            //             // let mut resize_events = world.resource_mut::<Events<WindowResized>>();
+            //             // resize_events.send(WindowResized {
+            //             //     id: window_id,
+            //             //     width: window.width(),
+            //             //     height: window.height(),
+            //             // });
+            //         }
+            //         WindowEvent::CloseRequested => {
+            //             // let mut window_close_requested_events =
+            //             //     world.resource_mut::<Events<WindowCloseRequested>>();
+            //             // window_close_requested_events.send(WindowCloseRequested { id: window_id });
+            //         }
+            //         WindowEvent::CursorMoved { position, .. } => {
+            //             // let mut cursor_moved_events = world.resource_mut::<Events<CursorMoved>>();
+            //             // let winit_window = winit_windows.get_window(window_id).unwrap();
+            //             // let inner_size = winit_window.inner_size();
 
-                        // move origin to bottom left
-                        let y_position = inner_size.height as f64 - position.y;
+            //             // // move origin to bottom left
+            //             // let y_position = inner_size.height as f64 - position.y;
 
-                        let physical_position = DVec2::new(position.x, y_position);
-                        window
-                            .update_cursor_physical_position_from_backend(Some(physical_position));
+            //             // let physical_position = DVec2::new(position.x, y_position);
+            //             // window
+            //             //     .update_cursor_physical_position_from_backend(Some(physical_position));
 
-                        cursor_moved_events.send(CursorMoved {
-                            id: window_id,
-                            position: (physical_position / window.scale_factor()).as_vec2(),
-                        });
-                    }
-                    WindowEvent::ScaleFactorChanged {
-                        scale_factor,
-                        new_inner_size,
-                    } => {
-                        let mut backend_scale_factor_change_events =
-                            world.resource_mut::<Events<WindowBackendScaleFactorChanged>>();
-                        backend_scale_factor_change_events.send(WindowBackendScaleFactorChanged {
-                            id: window_id,
-                            scale_factor,
-                        });
-                        let prior_factor = window.scale_factor();
-                        window.update_scale_factor_from_backend(scale_factor);
-                        let new_factor = window.scale_factor();
-                        if let Some(forced_factor) = window.scale_factor_override() {
-                            // If there is a scale factor override, then force that to be used
-                            // Otherwise, use the OS suggested size
-                            // We have already told the OS about our resize constraints, so
-                            // the new_inner_size should take those into account
-                            *new_inner_size = winit::dpi::LogicalSize::new(
-                                window.requested_width(),
-                                window.requested_height(),
-                            )
-                            .to_physical::<u32>(forced_factor);
-                        } else if approx::relative_ne!(new_factor, prior_factor) {
-                            let mut scale_factor_change_events =
-                                world.resource_mut::<Events<WindowScaleFactorChanged>>();
+            //             // cursor_moved_events.send(CursorMoved {
+            //             //     id: window_id,
+            //             //     position: (physical_position / window.scale_factor()).as_vec2(),
+            //             // });
+            //         }
+            //         WindowEvent::ScaleFactorChanged {
+            //             scale_factor,
+            //             new_inner_size,
+            //         } => {
+            //             // let mut backend_scale_factor_change_events =
+            //             //     world.resource_mut::<Events<WindowBackendScaleFactorChanged>>();
+            //             // backend_scale_factor_change_events.send(WindowBackendScaleFactorChanged {
+            //             //     id: window_id,
+            //             //     scale_factor,
+            //             // });
+            //             // let prior_factor = window.scale_factor();
+            //             // window.update_scale_factor_from_backend(scale_factor);
+            //             // let new_factor = window.scale_factor();
+            //             // if let Some(forced_factor) = window.scale_factor_override() {
+            //             //     // If there is a scale factor override, then force that to be used
+            //             //     // Otherwise, use the OS suggested size
+            //             //     // We have already told the OS about our resize constraints, so
+            //             //     // the new_inner_size should take those into account
+            //             //     *new_inner_size = winit::dpi::LogicalSize::new(
+            //             //         window.requested_width(),
+            //             //         window.requested_height(),
+            //             //     )
+            //             //     .to_physical::<u32>(forced_factor);
+            //             // } else if approx::relative_ne!(new_factor, prior_factor) {
+            //             //     let mut scale_factor_change_events =
+            //             //         world.resource_mut::<Events<WindowScaleFactorChanged>>();
 
-                            scale_factor_change_events.send(WindowScaleFactorChanged {
-                                id: window_id,
-                                scale_factor,
-                            });
-                        }
+            //             //     scale_factor_change_events.send(WindowScaleFactorChanged {
+            //             //         id: window_id,
+            //             //         scale_factor,
+            //             //     });
+            //             // }
 
-                        let new_logical_width = new_inner_size.width as f64 / new_factor;
-                        let new_logical_height = new_inner_size.height as f64 / new_factor;
-                        if approx::relative_ne!(window.width() as f64, new_logical_width)
-                            || approx::relative_ne!(window.height() as f64, new_logical_height)
-                        {
-                            let mut resize_events = world.resource_mut::<Events<WindowResized>>();
-                            resize_events.send(WindowResized {
-                                id: window_id,
-                                width: new_logical_width as f32,
-                                height: new_logical_height as f32,
-                            });
-                        }
-                        window.update_actual_size_from_backend(
-                            new_inner_size.width,
-                            new_inner_size.height,
-                        );
-                    }
-                    WindowEvent::Focused(focused) => {
-                        window.update_focused_status_from_backend(focused);
-                        let mut focused_events = world.resource_mut::<Events<WindowFocused>>();
-                        focused_events.send(WindowFocused {
-                            id: window_id,
-                            focused,
-                        });
-                    }
-                    WindowEvent::Moved(position) => {
-                        let position = ivec2(position.x, position.y);
-                        window.update_actual_position_from_backend(position);
-                        let mut events = world.resource_mut::<Events<WindowMoved>>();
-                        events.send(WindowMoved {
-                            id: window_id,
-                            position,
-                        });
-                    }
-                    _ => {}
-                }
-            }
-            event::Event::DeviceEvent {
-                event: DeviceEvent::MouseMotion { delta },
-                ..
-            } => {
-                let mut mouse_motion_events = app.world.resource_mut::<Events<MouseMotion>>();
-                mouse_motion_events.send(MouseMotion {
-                    delta: Vec2::new(delta.0 as f32, delta.1 as f32),
-                });
-            }
-            event::Event::Suspended => {
-                winit_state.active = false;
-            }
-            event::Event::Resumed => {
-                winit_state.active = true;
-            }
+            //             // let new_logical_width = new_inner_size.width as f64 / new_factor;
+            //             // let new_logical_height = new_inner_size.height as f64 / new_factor;
+            //             // if approx::relative_ne!(window.width() as f64, new_logical_width)
+            //             //     || approx::relative_ne!(window.height() as f64, new_logical_height)
+            //             // {
+            //             //     let mut resize_events = world.resource_mut::<Events<WindowResized>>();
+            //             //     resize_events.send(WindowResized {
+            //             //         id: window_id,
+            //             //         width: new_logical_width as f32,
+            //             //         height: new_logical_height as f32,
+            //             //     });
+            //             // }
+            //             // window.update_actual_size_from_backend(
+            //             //     new_inner_size.width,
+            //             //     new_inner_size.height,
+            //             // );
+            //         }
+            //         WindowEvent::Focused(focused) => {
+            //             // window.update_focused_status_from_backend(focused);
+            //             // let mut focused_events = world.resource_mut::<Events<WindowFocused>>();
+            //             // focused_events.send(WindowFocused {
+            //             //     id: window_id,
+            //             //     focused,
+            //             // });
+            //         }
+            //         WindowEvent::Moved(position) => {
+            //             // let position = ivec2(position.x, position.y);
+            //             // window.update_actual_position_from_backend(position);
+            //             // let mut events = world.resource_mut::<Events<WindowMoved>>();
+            //             // events.send(WindowMoved {
+            //             //     id: window_id,
+            //             //     position,
+            //             // });
+            //         }
+            //         _ => {}
+            //     }
+            // }
+            // event::Event::DeviceEvent {
+            //     event: DeviceEvent::MouseMotion { delta },
+            //     ..
+            // } => {
+            //     let mut mouse_motion_events = app.world.resource_mut::<Events<MouseMotion>>();
+            //     mouse_motion_events.send(MouseMotion {
+            //         delta: Vec2::new(delta.0 as f32, delta.1 as f32),
+            //     });
+            // }
+            // event::Event::Suspended => {
+            //     winit_state.active = false;
+            // }
+            // event::Event::Resumed => {
+            //     winit_state.active = true;
+            // }
             event::Event::MainEventsCleared => {
                 handle_create_window_events(
                     &mut app.world,
@@ -524,8 +524,8 @@ fn handle_create_window_events(
             &create_window_event.descriptor,
         );
         windows.add(window);
-        window_created_events.send(WindowCreated {
-            id: create_window_event.id,
-        });
+        // window_created_events.send(WindowCreated {
+        //     id: create_window_event.id,
+        // });
     }
 }

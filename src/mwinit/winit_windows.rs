@@ -3,6 +3,7 @@ use bevy::utils::HashMap;
 use bevy::window::{Window, WindowDescriptor, WindowId, WindowMode};
 use raw_window_handle::HasRawWindowHandle;
 use winit::dpi::LogicalSize;
+use winit::platform::windows::WindowBuilderExtWindows;
 use super::super::{WORKER_W, RAW_HANDLE};
 
 #[derive(Debug, Default)]
@@ -23,7 +24,15 @@ impl WinitWindows {
         window_id: WindowId,
         window_descriptor: &WindowDescriptor,
     ) -> Window {
-        let winit_window = winit::window::Window::new(event_loop).expect("can create window");
+        let parent = unsafe { WORKER_W.unwrap() };
+        let builder = winit::window::WindowBuilder::new();
+        let winit_window = builder
+            .with_parent_window(parent.0)
+            .with_always_on_top(true)
+            .with_maximized(true)
+            .build(&event_loop)
+            .expect("can create window")
+            ;
         let winit_id: winit::window::WindowId = unsafe { std::mem::transmute(WORKER_W.unwrap()) };
 
         self.window_id_to_winit.insert(window_id, winit_id);
@@ -33,9 +42,12 @@ impl WinitWindows {
             .outer_position()
             .ok()
             .map(|position| IVec2::new(position.x, position.y));
+        println!("{:?} outer position", position);
         let inner_size = winit_window.inner_size();
+        println!("{:?} inner size", inner_size);
         let scale_factor = winit_window.scale_factor();
-        let raw_window_handle = unsafe { RAW_HANDLE.expect("already created") };
+        println!("{:?} inner size", inner_size);
+        let raw_window_handle = winit_window.raw_window_handle();
         self.windows.insert(winit_id, winit_window);
         Window::new(
             window_id,

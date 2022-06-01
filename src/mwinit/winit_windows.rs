@@ -102,26 +102,6 @@ impl WinitWindows {
         #[allow(unused_mut)]
         let mut winit_window_builder = winit_window_builder.with_title(&window_descriptor.title);
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            use wasm_bindgen::JsCast;
-            use winit::platform::web::WindowBuilderExtWebSys;
-
-            if let Some(selector) = &window_descriptor.canvas {
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-                let canvas = document
-                    .query_selector(&selector)
-                    .expect("Cannot query for canvas element.");
-                if let Some(canvas) = canvas {
-                    let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok();
-                    winit_window_builder = winit_window_builder.with_canvas(canvas);
-                } else {
-                    panic!("Cannot find element: {}.", selector);
-                }
-            }
-        }
-
         let winit_window = winit_window_builder.build(event_loop).unwrap();
 
         if window_descriptor.cursor_locked {
@@ -136,22 +116,6 @@ impl WinitWindows {
 
         self.window_id_to_winit.insert(window_id, winit_window.id());
         self.winit_to_window_id.insert(winit_window.id(), window_id);
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            use winit::platform::web::WindowExtWebSys;
-
-            if window_descriptor.canvas.is_none() {
-                let canvas = winit_window.canvas();
-
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-                let body = document.body().unwrap();
-
-                body.append_child(&canvas)
-                    .expect("Append canvas to HTML body.");
-            }
-        }
 
         let position = winit_window
             .outer_position()
@@ -234,9 +198,3 @@ pub fn get_best_videomode(monitor: &winit::monitor::MonitorHandle) -> winit::mon
 
     modes.first().unwrap().clone()
 }
-
-// WARNING: this only works under the assumption that wasm runtime is single threaded
-#[cfg(target_arch = "wasm32")]
-unsafe impl Send for WinitWindows {}
-#[cfg(target_arch = "wasm32")]
-unsafe impl Sync for WinitWindows {}

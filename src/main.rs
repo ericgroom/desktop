@@ -17,6 +17,8 @@ use bevy::window::WindowId;
 // see if we can create a normal window and attach bevy to that, test with windows-rs and winit to narrow down
 // also see if we can draw to the winit window with gdi first
 
+pub static mut RAW_HANDLE: Option<RawWindowHandle> = None;
+
 fn main() {
     let window_handle = unsafe { get_workerw() };
     println!("{:?}", window_handle);
@@ -25,6 +27,7 @@ fn main() {
     let mut handle = Win32Handle::empty();
     handle.hwnd = window_handle.0 as *mut _;
     handle.hinstance = hinstance as *mut _;
+    unsafe { RAW_HANDLE = Some(RawWindowHandle::Win32(handle)) };
     let wallpaper_plugin = WallpaperWindowPlugin { handle: RawWindowHandle::Win32(handle).into() };
     App::new()
         // .insert_resource(bevy::log::LogSettings { level: bevy::log::Level::DEBUG, ..Default::default()})
@@ -190,7 +193,7 @@ fn draw_circle(
     });
 }
 
-static mut WORKER_W: Option<HWND> = None;
+pub static mut WORKER_W: Option<HWND> = None;
 
 unsafe fn get_workerw() -> HWND {
     let progman = FindWindowW("Progman", PCWSTR::default());

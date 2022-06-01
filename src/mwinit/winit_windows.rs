@@ -3,6 +3,7 @@ use bevy::utils::HashMap;
 use bevy::window::{Window, WindowDescriptor, WindowId, WindowMode};
 use raw_window_handle::HasRawWindowHandle;
 use winit::dpi::LogicalSize;
+use super::super::{WORKER_W, RAW_HANDLE};
 
 #[derive(Debug, Default)]
 pub struct WinitWindows {
@@ -22,100 +23,11 @@ impl WinitWindows {
         window_id: WindowId,
         window_descriptor: &WindowDescriptor,
     ) -> Window {
-        let mut winit_window_builder = winit::window::WindowBuilder::new();
+        let winit_window = winit::window::Window::new(event_loop).expect("can create window");
+        let winit_id: winit::window::WindowId = unsafe { std::mem::transmute(WORKER_W.unwrap()) };
 
-        winit_window_builder = match window_descriptor.mode {
-            WindowMode::BorderlessFullscreen => winit_window_builder.with_fullscreen(Some(
-                winit::window::Fullscreen::Borderless(event_loop.primary_monitor()),
-            )),
-            WindowMode::Fullscreen => {
-                winit_window_builder.with_fullscreen(Some(winit::window::Fullscreen::Exclusive(
-                    get_best_videomode(&event_loop.primary_monitor().unwrap()),
-                )))
-            }
-            WindowMode::SizedFullscreen => winit_window_builder.with_fullscreen(Some(
-                winit::window::Fullscreen::Exclusive(get_fitting_videomode(
-                    &event_loop.primary_monitor().unwrap(),
-                    window_descriptor.width as u32,
-                    window_descriptor.height as u32,
-                )),
-            )),
-            _ => {
-                let WindowDescriptor {
-                    width,
-                    height,
-                    position,
-                    scale_factor_override,
-                    ..
-                } = window_descriptor;
-
-                if let Some(position) = position {
-                    if let Some(sf) = scale_factor_override {
-                        winit_window_builder = winit_window_builder.with_position(
-                            winit::dpi::LogicalPosition::new(
-                                position[0] as f64,
-                                position[1] as f64,
-                            )
-                            .to_physical::<f64>(*sf),
-                        );
-                    } else {
-                        winit_window_builder =
-                            winit_window_builder.with_position(winit::dpi::LogicalPosition::new(
-                                position[0] as f64,
-                                position[1] as f64,
-                            ));
-                    }
-                }
-                if let Some(sf) = scale_factor_override {
-                    winit_window_builder.with_inner_size(
-                        winit::dpi::LogicalSize::new(*width, *height).to_physical::<f64>(*sf),
-                    )
-                } else {
-                    winit_window_builder
-                        .with_inner_size(winit::dpi::LogicalSize::new(*width, *height))
-                }
-            }
-            .with_resizable(window_descriptor.resizable)
-            .with_decorations(window_descriptor.decorations)
-            .with_transparent(window_descriptor.transparent),
-        };
-
-        let constraints = window_descriptor.resize_constraints.check_constraints();
-        let min_inner_size = LogicalSize {
-            width: constraints.min_width,
-            height: constraints.min_height,
-        };
-        let max_inner_size = LogicalSize {
-            width: constraints.max_width,
-            height: constraints.max_height,
-        };
-
-        let winit_window_builder =
-            if constraints.max_width.is_finite() && constraints.max_height.is_finite() {
-                winit_window_builder
-                    .with_min_inner_size(min_inner_size)
-                    .with_max_inner_size(max_inner_size)
-            } else {
-                winit_window_builder.with_min_inner_size(min_inner_size)
-            };
-
-        #[allow(unused_mut)]
-        let mut winit_window_builder = winit_window_builder.with_title(&window_descriptor.title);
-
-        let winit_window = winit_window_builder.build(event_loop).unwrap();
-
-        if window_descriptor.cursor_locked {
-            match winit_window.set_cursor_grab(true) {
-                Ok(_) => {}
-                Err(winit::error::ExternalError::NotSupported(_)) => {}
-                Err(err) => Err(err).unwrap(),
-            }
-        }
-
-        winit_window.set_cursor_visible(window_descriptor.cursor_visible);
-
-        self.window_id_to_winit.insert(window_id, winit_window.id());
-        self.winit_to_window_id.insert(winit_window.id(), window_id);
+        self.window_id_to_winit.insert(window_id, winit_id);
+        self.winit_to_window_id.insert(winit_id, window_id);
 
         let position = winit_window
             .outer_position()
@@ -123,8 +35,8 @@ impl WinitWindows {
             .map(|position| IVec2::new(position.x, position.y));
         let inner_size = winit_window.inner_size();
         let scale_factor = winit_window.scale_factor();
-        let raw_window_handle = winit_window.raw_window_handle();
-        self.windows.insert(winit_window.id(), winit_window);
+        let raw_window_handle = unsafe { RAW_HANDLE.expect("already created") };
+        self.windows.insert(winit_id, winit_window);
         Window::new(
             window_id,
             window_descriptor,

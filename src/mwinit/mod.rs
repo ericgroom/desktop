@@ -1,6 +1,4 @@
 mod converters;
-#[cfg(target_arch = "wasm32")]
-mod web_resize;
 mod winit_config;
 mod winit_windows;
 
@@ -45,13 +43,8 @@ impl Plugin for MWinitPlugin {
             .init_resource::<WinitSettings>()
             .set_runner(winit_runner)
             .add_system_to_stage(CoreStage::PostUpdate, change_window.label(ModifiesWindows));
-        #[cfg(target_arch = "wasm32")]
-        app.add_plugin(web_resize::CanvasParentResizePlugin);
         let event_loop = EventLoop::new();
-        let mut create_window_reader = WinitCreateWindowReader::default();
-        // Note that we create a window here "early" because WASM/WebGL requires the window to exist prior to initializing
-        // the renderer.
-        handle_create_window_events(&mut app.world, &event_loop, &mut create_window_reader.0);
+        let create_window_reader = WinitCreateWindowReader::default();
         app.insert_resource(create_window_reader)
             .insert_non_send_resource(event_loop);
     }
@@ -643,18 +636,5 @@ fn handle_create_window_events(
         window_created_events.send(WindowCreated {
             id: create_window_event.id,
         });
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            let channel = world.resource_mut::<web_resize::CanvasParentResizeEventChannel>();
-            if create_window_event.descriptor.fit_canvas_to_parent {
-                let selector = if let Some(selector) = &create_window_event.descriptor.canvas {
-                    selector
-                } else {
-                    web_resize::WINIT_CANVAS_SELECTOR
-                };
-                channel.listen_to_selector(create_window_event.id, selector);
-            }
-        }
     }
 }

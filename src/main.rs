@@ -157,25 +157,6 @@ fn runner(mut app: App) {
     );
 }
 
-fn create_main_window(mut create_window_events: EventWriter<bevy::window::CreateWindow>, mut commands: Commands) {
-    let window_id = WindowId::primary();
-
-    create_window_events.send(bevy::window::CreateWindow {
-        id: window_id,
-        descriptor: bevy::window::WindowDescriptor {
-            width: 800.0,
-            height: 600.0,
-            present_mode: bevy::window::PresentMode::Immediate,
-            title: "test".into(),
-            ..default()
-        }
-    });
-
-    // commands.spawn_bundle(OrthographicCameraBundle {
-    //     camera: Camera { target: window_id,  }
-    // });
-}
-
 fn setup_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }

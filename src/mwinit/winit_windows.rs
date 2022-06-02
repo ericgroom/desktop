@@ -30,6 +30,7 @@ impl WinitWindows {
             .with_parent_window(parent.0)
             .with_always_on_top(true)
             .with_maximized(true)
+            .with_decorations(false)
             .build(&event_loop)
             .expect("can create window")
             ;
@@ -42,11 +43,8 @@ impl WinitWindows {
             .outer_position()
             .ok()
             .map(|position| IVec2::new(position.x, position.y));
-        println!("{:?} outer position", position);
         let inner_size = winit_window.inner_size();
-        println!("{:?} inner size", inner_size);
         let scale_factor = winit_window.scale_factor();
-        println!("{:?} inner size", inner_size);
         let raw_window_handle = winit_window.raw_window_handle();
         self.windows.insert(winit_id, winit_window);
         Window::new(

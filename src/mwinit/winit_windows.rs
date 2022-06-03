@@ -1,10 +1,9 @@
 use bevy::math::IVec2;
 use bevy::utils::HashMap;
-use bevy::window::{Window, WindowDescriptor, WindowId, WindowMode};
+use bevy::window::{Window, WindowDescriptor, WindowId};
 use raw_window_handle::HasRawWindowHandle;
-use winit::dpi::LogicalSize;
 use winit::platform::windows::WindowBuilderExtWindows;
-use super::super::{WORKER_W, RAW_HANDLE};
+use super::windows_voodoo::get_workerw;
 
 #[derive(Debug, Default)]
 pub struct WinitWindows {
@@ -24,7 +23,7 @@ impl WinitWindows {
         window_id: WindowId,
         window_descriptor: &WindowDescriptor,
     ) -> Window {
-        let parent = unsafe { WORKER_W.unwrap() };
+        let parent = unsafe { get_workerw() };
         let builder = winit::window::WindowBuilder::new();
         let winit_window = builder
             .with_parent_window(parent.0)
@@ -34,7 +33,7 @@ impl WinitWindows {
             .build(&event_loop)
             .expect("can create window")
             ;
-        let winit_id: winit::window::WindowId = unsafe { std::mem::transmute(WORKER_W.unwrap()) };
+        let winit_id: winit::window::WindowId = unsafe { std::mem::transmute(parent) };
 
         self.window_id_to_winit.insert(window_id, winit_id);
         self.winit_to_window_id.insert(winit_id, window_id);

@@ -11,28 +11,27 @@ use bevy::ecs::{
     event::{Events, ManualEventReader},
     world::World,
 };
-use bevy::math::{ivec2, DVec2, Vec2};
+use bevy::math::ivec2;
 use bevy::utils::{
-    tracing::{error, info, trace, warn},
+    tracing::{info, trace, warn},
     Instant,
 };
 use bevy::window::{
-    CreateWindow, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, ModifiesWindows,
-    ReceivedCharacter, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
+    CreateWindow, ModifiesWindows, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
     WindowClosed, WindowCreated, WindowFocused, WindowMoved, WindowResized,
     WindowScaleFactorChanged, Windows,
 };
 
 use winit::{
     dpi::{LogicalSize, PhysicalPosition},
-    event::{self, DeviceEvent, Event, StartCause, WindowEvent},
+    event::{self, Event, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
 };
 
 #[derive(Default)]
-pub struct MWinitPlugin;
+pub struct WallpaperRenderPlugin;
 
-impl Plugin for MWinitPlugin {
+impl Plugin for WallpaperRenderPlugin {
     fn build(&self, app: &mut App) {
         app.init_non_send_resource::<WinitWindows>()
             .init_resource::<WinitSettings>()

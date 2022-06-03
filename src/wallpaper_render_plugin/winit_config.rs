@@ -20,11 +20,13 @@ pub struct WinitSettings {
 }
 impl WinitSettings {
     /// Configure winit with common settings for a game.
+    #[allow(dead_code)]
     pub fn game() -> Self {
         WinitSettings::default()
     }
 
     /// Configure winit with common settings for a desktop application.
+    #[allow(dead_code)]
     pub fn desktop_app() -> Self {
         WinitSettings {
             focused_mode: UpdateMode::Reactive {

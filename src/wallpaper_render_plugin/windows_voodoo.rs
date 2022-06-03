@@ -1,7 +1,7 @@
 use std::sync::atomic::AtomicIsize;
 
 use windows::{
-    Win32::UI::WindowsAndMessaging::{FindWindowW, SendMessageTimeoutW, SMTO_NORMAL, EnumWindows, FindWindowExW, GWLP_HINSTANCE, GetWindowLongPtrW},
+    Win32::UI::WindowsAndMessaging::{FindWindowW, SendMessageTimeoutW, SMTO_NORMAL, EnumWindows, FindWindowExW},
     core::PCWSTR,
     Win32::{Foundation::{WPARAM, LPARAM, BOOL, HWND}},
 

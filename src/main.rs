@@ -1,7 +1,7 @@
 mod wallpaper_render_plugin;
 
 use bevy::prelude::*;
-use bevy::sprite::MaterialMesh2dBundle;
+use bevy_prototype_lyon::prelude::*;
 
 use wallpaper_render_plugin::WallpaperRenderPlugin;
 
@@ -21,26 +21,27 @@ fn main() {
         .add_plugin(bevy::pbr::PbrPlugin)
         .add_plugin(bevy::sprite::SpritePlugin)
         .add_plugin(WallpaperRenderPlugin)
-        .add_startup_system(setup_camera)
-        .add_system(draw_square)
+        .add_plugin(ShapePlugin)
+        .add_startup_system(setup)
         .run()
         ;
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-}
+fn setup(mut commands: Commands) {
+    commands.spawn_bundle(Camera2dBundle::default());
 
-fn draw_square(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>
-) {
-    commands.spawn_bundle(MaterialMesh2dBundle {
-        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-        transform: Transform::default().with_scale(Vec3::splat(1280.)),
-        material: materials.add(ColorMaterial::from(Color::BLUE)),
-        ..default()
-    });
-}
+    let shape = shapes::RegularPolygon {
+        sides: 6,
+        feature: shapes::RegularPolygonFeature::Radius(200.0),
+        ..shapes::RegularPolygon::default()
+    };
 
+    commands.spawn_bundle(GeometryBuilder::build_as(
+        &shape,
+        DrawMode::Outlined {
+            fill_mode: FillMode::color(Color::CYAN),
+            outline_mode: StrokeMode::new(Color::BLACK, 10.0),
+        },
+        Transform::default(),
+    ));
+}

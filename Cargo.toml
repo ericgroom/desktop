@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.7.0"
 bevy_prototype_lyon = "0.5.0"
+heron = { version = "3.1.0", features = ["2d"] }
 winit = { git = "https://github.com/rust-windowing/winit.git", branch = "master" }
 raw-window-handle = "0.4.3"
 approx = { version = "0.5.0", default-features = false }

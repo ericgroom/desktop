@@ -2,6 +2,7 @@ mod wallpaper_render_plugin;
 
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use heron::prelude::*;
 
 use wallpaper_render_plugin::WallpaperRenderPlugin;
 
@@ -19,10 +20,13 @@ fn main() {
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
         .add_plugin(bevy::pbr::PbrPlugin)
+        .add_plugin(PhysicsPlugin::default())
         .add_plugin(bevy::sprite::SpritePlugin)
         .add_plugin(WallpaperRenderPlugin)
         .add_plugin(ShapePlugin)
         .add_startup_system(setup)
+        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(ClearColor(Color::rgb(0_f32, 0_f32, 0_f32)))
         .run()
         ;
 }
@@ -43,5 +47,8 @@ fn setup(mut commands: Commands) {
             outline_mode: StrokeMode::new(Color::BLACK, 10.0),
         },
         Transform::default(),
-    ));
+    ))
+    .insert(RigidBody::Dynamic)
+    .insert(Velocity::from_linear(Vec3::X * -20.0))
+    ;
 }

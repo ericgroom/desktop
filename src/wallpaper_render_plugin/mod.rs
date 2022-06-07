@@ -17,9 +17,9 @@ use bevy::utils::{
     Instant,
 };
 use bevy::window::{
-    CreateWindow, ModifiesWindows, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
-    WindowClosed, WindowCreated, WindowFocused, WindowMoved, WindowResized,
-    WindowScaleFactorChanged, Windows,
+    CreateWindow, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
+    WindowCreated, WindowFocused, WindowMoved, WindowResized,
+    WindowScaleFactorChanged, Windows
 };
 
 use winit::{
@@ -36,7 +36,7 @@ impl Plugin for WallpaperRenderPlugin {
         app.init_non_send_resource::<WinitWindows>()
             .init_resource::<WinitSettings>()
             .set_runner(winit_runner)
-            .add_system_to_stage(CoreStage::PostUpdate, change_window.label(ModifiesWindows));
+            .add_system_to_stage(CoreStage::PostUpdate, change_window);
         let event_loop = EventLoop::new();
         let create_window_reader = WinitCreateWindowReader::default();
         app.insert_resource(create_window_reader)
@@ -45,12 +45,10 @@ impl Plugin for WallpaperRenderPlugin {
 }
 
 fn change_window(
-    mut winit_windows: NonSendMut<WinitWindows>,
+    winit_windows: NonSend<WinitWindows>,
     mut windows: ResMut<Windows>,
     mut window_dpi_changed_events: EventWriter<WindowScaleFactorChanged>,
-    mut window_close_events: EventWriter<WindowClosed>,
 ) {
-    let mut removed_windows = vec![];
     for bevy_window in windows.iter_mut() {
         let id = bevy_window.id();
         for command in bevy_window.drain_commands() {
@@ -134,26 +132,10 @@ fn change_window(
                         window.set_max_inner_size(Some(max_inner_size));
                     }
                 }
-                bevy::window::WindowCommand::Close => {
-                    // Since we have borrowed `windows` to iterate through them, we can't remove the window from it.
-                    // Add the removal requests to a queue to solve this
-                    removed_windows.push(id);
-                    // No need to run any further commands - this drops the rest of the commands, although the `bevy::window::Window` will be dropped later anyway
-                    break;
-                }
                 e => {
                     println!("ignored event: {:?}", e);
                 }
             }
-        }
-    }
-    if !removed_windows.is_empty() {
-        for id in removed_windows {
-            // Close the OS window. (The `Drop` impl actually closes the window)
-            let _ = winit_windows.remove_window(id);
-            // Clean up our own data structures
-            windows.remove(id);
-            window_close_events.send(WindowClosed { id });
         }
     }
 }
@@ -295,8 +277,8 @@ pub fn winit_runner_with(mut app: App) {
                 ..
             } => {
                 let world = app.world.cell();
-                let winit_windows = world.non_send_resource_mut::<WinitWindows>();
-                let mut windows = world.resource_mut::<Windows>();
+                let winit_windows = world.get_non_send_mut::<WinitWindows>().unwrap();
+                let mut windows = world.get_resource_mut::<Windows>().unwrap();
                 let window_id =
                     if let Some(window_id) = winit_windows.get_window_id(winit_window_id) {
                         window_id
@@ -320,7 +302,7 @@ pub fn winit_runner_with(mut app: App) {
                 match event {
                     WindowEvent::Resized(size) => {
                         window.update_actual_size_from_backend(size.width, size.height);
-                        let mut resize_events = world.resource_mut::<Events<WindowResized>>();
+                        let mut resize_events = world.get_resource_mut::<Events<WindowResized>>().unwrap();
                         resize_events.send(WindowResized {
                             id: window_id,
                             width: window.width(),
@@ -329,7 +311,7 @@ pub fn winit_runner_with(mut app: App) {
                     }
                     WindowEvent::CloseRequested => {
                         let mut window_close_requested_events =
-                            world.resource_mut::<Events<WindowCloseRequested>>();
+                            world.get_resource_mut::<Events<WindowCloseRequested>>().unwrap();
                         window_close_requested_events.send(WindowCloseRequested { id: window_id });
                     }
                     WindowEvent::ScaleFactorChanged {
@@ -337,7 +319,7 @@ pub fn winit_runner_with(mut app: App) {
                         new_inner_size,
                     } => {
                         let mut backend_scale_factor_change_events =
-                            world.resource_mut::<Events<WindowBackendScaleFactorChanged>>();
+                            world.get_resource_mut::<Events<WindowBackendScaleFactorChanged>>().unwrap();
                         backend_scale_factor_change_events.send(WindowBackendScaleFactorChanged {
                             id: window_id,
                             scale_factor,
@@ -357,7 +339,7 @@ pub fn winit_runner_with(mut app: App) {
                             .to_physical::<u32>(forced_factor);
                         } else if approx::relative_ne!(new_factor, prior_factor) {
                             let mut scale_factor_change_events =
-                                world.resource_mut::<Events<WindowScaleFactorChanged>>();
+                                world.get_resource_mut::<Events<WindowScaleFactorChanged>>().unwrap();
 
                             scale_factor_change_events.send(WindowScaleFactorChanged {
                                 id: window_id,
@@ -370,7 +352,7 @@ pub fn winit_runner_with(mut app: App) {
                         if approx::relative_ne!(window.width() as f64, new_logical_width)
                             || approx::relative_ne!(window.height() as f64, new_logical_height)
                         {
-                            let mut resize_events = world.resource_mut::<Events<WindowResized>>();
+                            let mut resize_events = world.get_resource_mut::<Events<WindowResized>>().unwrap();
                             resize_events.send(WindowResized {
                                 id: window_id,
                                 width: new_logical_width as f32,
@@ -384,7 +366,7 @@ pub fn winit_runner_with(mut app: App) {
                     }
                     WindowEvent::Focused(focused) => {
                         window.update_focused_status_from_backend(focused);
-                        let mut focused_events = world.resource_mut::<Events<WindowFocused>>();
+                        let mut focused_events = world.get_resource_mut::<Events<WindowFocused>>().unwrap();
                         focused_events.send(WindowFocused {
                             id: window_id,
                             focused,
@@ -393,7 +375,7 @@ pub fn winit_runner_with(mut app: App) {
                     WindowEvent::Moved(position) => {
                         let position = ivec2(position.x, position.y);
                         window.update_actual_position_from_backend(position);
-                        let mut events = world.resource_mut::<Events<WindowMoved>>();
+                        let mut events = world.get_resource_mut::<Events<WindowMoved>>().unwrap();
                         events.send(WindowMoved {
                             id: window_id,
                             position,
@@ -482,10 +464,10 @@ fn handle_create_window_events(
     create_window_event_reader: &mut ManualEventReader<CreateWindow>,
 ) {
     let world = world.cell();
-    let mut winit_windows = world.non_send_resource_mut::<WinitWindows>();
-    let mut windows = world.resource_mut::<Windows>();
-    let create_window_events = world.resource::<Events<CreateWindow>>();
-    let mut window_created_events = world.resource_mut::<Events<WindowCreated>>();
+    let mut winit_windows = world.get_non_send_mut::<WinitWindows>().unwrap();
+    let mut windows = world.get_resource_mut::<Windows>().unwrap();
+    let create_window_events = world.get_resource::<Events<CreateWindow>>().unwrap();
+    let mut window_created_events = world.get_resource_mut::<Events<WindowCreated>>().unwrap();
     for create_window_event in create_window_event_reader.iter(&create_window_events) {
         let window = winit_windows.create_window(
             event_loop,

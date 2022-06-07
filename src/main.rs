@@ -14,7 +14,7 @@ fn main() {
         .add_plugin(bevy::hierarchy::HierarchyPlugin)
         .add_plugin(bevy::diagnostic::DiagnosticsPlugin)
         .add_plugin(bevy::asset::AssetPlugin)
-        .add_plugin(bevy::window::WindowPlugin { add_primary_window: true, close_when_requested: false, exit_on_all_closed: false })
+        .add_plugin(bevy::window::WindowPlugin { add_primary_window: true, exit_on_close: false })
         .add_plugin(bevy::input::InputPlugin)
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
@@ -28,7 +28,7 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     let shape = shapes::RegularPolygon {
         sides: 6,

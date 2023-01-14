@@ -1,8 +1,6 @@
 mod wallpaper_render_plugin;
 
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::*;
-use heron::prelude::*;
 
 use wallpaper_render_plugin::WallpaperRenderPlugin;
 
@@ -23,34 +21,45 @@ fn main() {
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
         .add_plugin(bevy::pbr::PbrPlugin)
-        .add_plugin(PhysicsPlugin::default())
         .add_plugin(bevy::sprite::SpritePlugin)
         .add_plugin(WallpaperRenderPlugin)
-        .add_plugin(ShapePlugin)
         .add_startup_system(setup)
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0_f32, 0_f32, 0_f32)))
         .run();
 }
 
-fn setup(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-
-    let shape = shapes::RegularPolygon {
-        sides: 6,
-        feature: shapes::RegularPolygonFeature::Radius(200.0),
-        ..shapes::RegularPolygon::default()
-    };
-
-    commands
-        .spawn_bundle(GeometryBuilder::build_as(
-            &shape,
-            DrawMode::Outlined {
-                fill_mode: FillMode::color(Color::CYAN),
-                outline_mode: StrokeMode::new(Color::BLACK, 10.0),
-            },
-            Transform::default(),
-        ))
-        .insert(RigidBody::Dynamic)
-        .insert(Velocity::from_linear(Vec3::X * -20.0));
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // plane
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        ..default()
+    });
+    // cube
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        ..default()
+    });
+    // light
+    commands.spawn_bundle(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..default()
+    });
+    // camera
+    commands.spawn_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..Default::default()
+    });
 }

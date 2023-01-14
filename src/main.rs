@@ -15,7 +15,10 @@ fn main() {
         .add_plugin(bevy::hierarchy::HierarchyPlugin)
         .add_plugin(bevy::diagnostic::DiagnosticsPlugin)
         .add_plugin(bevy::asset::AssetPlugin)
-        .add_plugin(bevy::window::WindowPlugin { add_primary_window: true, exit_on_close: false })
+        .add_plugin(bevy::window::WindowPlugin {
+            add_primary_window: true,
+            exit_on_close: false,
+        })
         .add_plugin(bevy::input::InputPlugin)
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
@@ -27,8 +30,7 @@ fn main() {
         .add_startup_system(setup)
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0_f32, 0_f32, 0_f32)))
-        .run()
-        ;
+        .run();
 }
 
 fn setup(mut commands: Commands) {
@@ -40,15 +42,15 @@ fn setup(mut commands: Commands) {
         ..shapes::RegularPolygon::default()
     };
 
-    commands.spawn_bundle(GeometryBuilder::build_as(
-        &shape,
-        DrawMode::Outlined {
-            fill_mode: FillMode::color(Color::CYAN),
-            outline_mode: StrokeMode::new(Color::BLACK, 10.0),
-        },
-        Transform::default(),
-    ))
-    .insert(RigidBody::Dynamic)
-    .insert(Velocity::from_linear(Vec3::X * -20.0))
-    ;
+    commands
+        .spawn_bundle(GeometryBuilder::build_as(
+            &shape,
+            DrawMode::Outlined {
+                fill_mode: FillMode::color(Color::CYAN),
+                outline_mode: StrokeMode::new(Color::BLACK, 10.0),
+            },
+            Transform::default(),
+        ))
+        .insert(RigidBody::Dynamic)
+        .insert(Velocity::from_linear(Vec3::X * -20.0));
 }

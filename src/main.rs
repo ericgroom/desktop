@@ -13,10 +13,12 @@ fn main() {
         .add_plugin(bevy::hierarchy::HierarchyPlugin)
         .add_plugin(bevy::diagnostic::DiagnosticsPlugin)
         .add_plugin(bevy::asset::AssetPlugin)
-        .add_plugin(bevy::window::WindowPlugin {
+        .insert_resource(bevy::window::WindowSettings {
             add_primary_window: true,
-            exit_on_close: false,
+            exit_on_all_closed: false,
+            close_when_requested: true,
         })
+        .add_plugin(bevy::window::WindowPlugin)
         .add_plugin(bevy::input::InputPlugin)
         .add_plugin(bevy::render::RenderPlugin)
         .add_plugin(bevy::core_pipeline::CorePipelinePlugin)
@@ -58,8 +60,8 @@ fn setup(
         ..default()
     });
     // camera
-    commands.spawn_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(Camera3dBundle {
         transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
+        ..default()
     });
 }

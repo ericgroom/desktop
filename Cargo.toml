@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.7.0"
+bevy = "0.8.0"
 winit = { git = "https://github.com/rust-windowing/winit.git", branch = "master" }
 raw-window-handle = "0.4.3"
 approx = { version = "0.5.0", default-features = false }

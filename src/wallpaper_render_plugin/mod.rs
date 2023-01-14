@@ -1,6 +1,6 @@
+mod windows_voodoo;
 mod winit_config;
 mod winit_windows;
-mod windows_voodoo;
 
 pub use winit_config::*;
 pub use winit_windows::*;
@@ -11,15 +11,14 @@ use bevy::ecs::{
     event::{Events, ManualEventReader},
     world::World,
 };
-use bevy::math::ivec2;
+use bevy::math::{ivec2, DVec2, UVec2, Vec2};
 use bevy::utils::{
     tracing::{info, trace, warn},
     Instant,
 };
 use bevy::window::{
     CreateWindow, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
-    WindowCreated, WindowFocused, WindowMoved, WindowResized,
-    WindowScaleFactorChanged, Windows
+    WindowCreated, WindowFocused, WindowMoved, WindowResized, WindowScaleFactorChanged, Windows,
 };
 
 use winit::{
@@ -55,7 +54,11 @@ fn change_window(
             match command {
                 bevy::window::WindowCommand::SetWindowMode {
                     mode,
-                    resolution: (width, height),
+                    resolution:
+                        UVec2 {
+                            x: width,
+                            y: height,
+                        },
                 } => {
                     let window = winit_windows.get_window(id).unwrap();
                     match mode {
@@ -86,7 +89,11 @@ fn change_window(
                     window_dpi_changed_events.send(WindowScaleFactorChanged { id, scale_factor });
                 }
                 bevy::window::WindowCommand::SetResolution {
-                    logical_resolution: (width, height),
+                    logical_resolution:
+                        Vec2 {
+                            x: width,
+                            y: height,
+                        },
                     scale_factor,
                 } => {
                     let window = winit_windows.get_window(id).unwrap();
@@ -277,7 +284,7 @@ pub fn winit_runner_with(mut app: App) {
                 ..
             } => {
                 let world = app.world.cell();
-                let winit_windows = world.get_non_send_mut::<WinitWindows>().unwrap();
+                let winit_windows = world.get_non_send_resource_mut::<WinitWindows>().unwrap();
                 let mut windows = world.get_resource_mut::<Windows>().unwrap();
                 let window_id =
                     if let Some(window_id) = winit_windows.get_window_id(winit_window_id) {
@@ -302,7 +309,8 @@ pub fn winit_runner_with(mut app: App) {
                 match event {
                     WindowEvent::Resized(size) => {
                         window.update_actual_size_from_backend(size.width, size.height);
-                        let mut resize_events = world.get_resource_mut::<Events<WindowResized>>().unwrap();
+                        let mut resize_events =
+                            world.get_resource_mut::<Events<WindowResized>>().unwrap();
                         resize_events.send(WindowResized {
                             id: window_id,
                             width: window.width(),
@@ -310,16 +318,18 @@ pub fn winit_runner_with(mut app: App) {
                         });
                     }
                     WindowEvent::CloseRequested => {
-                        let mut window_close_requested_events =
-                            world.get_resource_mut::<Events<WindowCloseRequested>>().unwrap();
+                        let mut window_close_requested_events = world
+                            .get_resource_mut::<Events<WindowCloseRequested>>()
+                            .unwrap();
                         window_close_requested_events.send(WindowCloseRequested { id: window_id });
                     }
                     WindowEvent::ScaleFactorChanged {
                         scale_factor,
                         new_inner_size,
                     } => {
-                        let mut backend_scale_factor_change_events =
-                            world.get_resource_mut::<Events<WindowBackendScaleFactorChanged>>().unwrap();
+                        let mut backend_scale_factor_change_events = world
+                            .get_resource_mut::<Events<WindowBackendScaleFactorChanged>>()
+                            .unwrap();
                         backend_scale_factor_change_events.send(WindowBackendScaleFactorChanged {
                             id: window_id,
                             scale_factor,
@@ -338,8 +348,9 @@ pub fn winit_runner_with(mut app: App) {
                             )
                             .to_physical::<u32>(forced_factor);
                         } else if approx::relative_ne!(new_factor, prior_factor) {
-                            let mut scale_factor_change_events =
-                                world.get_resource_mut::<Events<WindowScaleFactorChanged>>().unwrap();
+                            let mut scale_factor_change_events = world
+                                .get_resource_mut::<Events<WindowScaleFactorChanged>>()
+                                .unwrap();
 
                             scale_factor_change_events.send(WindowScaleFactorChanged {
                                 id: window_id,
@@ -352,7 +363,8 @@ pub fn winit_runner_with(mut app: App) {
                         if approx::relative_ne!(window.width() as f64, new_logical_width)
                             || approx::relative_ne!(window.height() as f64, new_logical_height)
                         {
-                            let mut resize_events = world.get_resource_mut::<Events<WindowResized>>().unwrap();
+                            let mut resize_events =
+                                world.get_resource_mut::<Events<WindowResized>>().unwrap();
                             resize_events.send(WindowResized {
                                 id: window_id,
                                 width: new_logical_width as f32,
@@ -366,7 +378,8 @@ pub fn winit_runner_with(mut app: App) {
                     }
                     WindowEvent::Focused(focused) => {
                         window.update_focused_status_from_backend(focused);
-                        let mut focused_events = world.get_resource_mut::<Events<WindowFocused>>().unwrap();
+                        let mut focused_events =
+                            world.get_resource_mut::<Events<WindowFocused>>().unwrap();
                         focused_events.send(WindowFocused {
                             id: window_id,
                             focused,
@@ -464,7 +477,7 @@ fn handle_create_window_events(
     create_window_event_reader: &mut ManualEventReader<CreateWindow>,
 ) {
     let world = world.cell();
-    let mut winit_windows = world.get_non_send_mut::<WinitWindows>().unwrap();
+    let mut winit_windows = world.get_non_send_resource_mut::<WinitWindows>().unwrap();
     let mut windows = world.get_resource_mut::<Windows>().unwrap();
     let create_window_events = world.get_resource::<Events<CreateWindow>>().unwrap();
     let mut window_created_events = world.get_resource_mut::<Events<WindowCreated>>().unwrap();

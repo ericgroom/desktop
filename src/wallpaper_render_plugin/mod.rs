@@ -18,8 +18,9 @@ use bevy::utils::{
     Instant,
 };
 use bevy::window::{
-    CreateWindow, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
-    WindowCreated, WindowFocused, WindowMoved, WindowResized, WindowScaleFactorChanged, Windows,
+    CreateWindow, ModifiesWindows, RequestRedraw, WindowBackendScaleFactorChanged,
+    WindowCloseRequested, WindowCreated, WindowFocused, WindowMoved, WindowResized,
+    WindowScaleFactorChanged, Windows,
 };
 
 use winit::{
@@ -36,7 +37,7 @@ impl Plugin for WallpaperRenderPlugin {
         app.init_non_send_resource::<WinitWindows>()
             .init_resource::<WinitSettings>()
             .set_runner(winit_runner)
-            .add_system_to_stage(CoreStage::PostUpdate, change_window);
+            .add_system_to_stage(CoreStage::PostUpdate, change_window.label(ModifiesWindows));
         let event_loop = EventLoop::new();
         let create_window_reader = WinitCreateWindowReader::default();
         app.insert_resource(create_window_reader)
@@ -306,8 +307,8 @@ pub fn winit_runner_with(mut app: App) {
                         window_id
                     } else {
                         warn!(
-                            "Skipped event for unknown winit Window Id {:?}",
-                            winit_window_id
+                            "Skipped event for unknown winit Window Id {:?}, event: {:?}",
+                            winit_window_id, event
                         );
                         return;
                     };

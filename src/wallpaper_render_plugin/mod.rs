@@ -9,6 +9,7 @@ use bevy::app::{App, AppExit, CoreStage, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::ecs::{
     event::{Events, ManualEventReader},
+    system::Resource,
     world::World,
 };
 use bevy::math::{ivec2, DVec2, UVec2, Vec2};
@@ -22,7 +23,7 @@ use bevy::window::{
 };
 
 use winit::{
-    dpi::{LogicalSize, PhysicalPosition},
+    dpi::{LogicalPosition, LogicalSize},
     event::{self, Event, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
 };
@@ -115,12 +116,26 @@ fn change_window(
                     let window = winit_windows.get_window(id).unwrap();
                     window.set_minimized(minimized);
                 }
-                bevy::window::WindowCommand::SetPosition { position } => {
+                bevy::window::WindowCommand::SetPosition {
+                    monitor_selection,
+                    position,
+                } => {
                     let window = winit_windows.get_window(id).unwrap();
-                    window.set_outer_position(PhysicalPosition {
-                        x: position[0],
-                        y: position[1],
-                    });
+
+                    use bevy::window::MonitorSelection::*;
+                    let maybe_monitor = match monitor_selection {
+                        Current => window.current_monitor(),
+                        Primary => window.primary_monitor(),
+                        Index(i) => window.available_monitors().nth(i),
+                    };
+                    if let Some(monitor) = maybe_monitor {
+                        let monitor_position = DVec2::from(<(_, _)>::from(monitor.position()));
+                        let position = monitor_position + position.as_dvec2();
+
+                        window.set_outer_position(LogicalPosition::new(position.x, position.y));
+                    } else {
+                        warn!("Couldn't get monitor selected with: {monitor_selection:?}");
+                    }
                 }
                 bevy::window::WindowCommand::SetResizeConstraints { resize_constraints } => {
                     let window = winit_windows.get_window(id).unwrap();
@@ -230,7 +245,7 @@ impl Default for WinitPersistentState {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct WinitCreateWindowReader(ManualEventReader<CreateWindow>);
 
 pub fn winit_runner_with(mut app: App) {

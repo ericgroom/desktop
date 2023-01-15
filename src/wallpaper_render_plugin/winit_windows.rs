@@ -1,9 +1,9 @@
+use super::windows_voodoo::get_workerw;
 use bevy::math::IVec2;
 use bevy::utils::HashMap;
-use bevy::window::{Window, WindowDescriptor, WindowId};
-use raw_window_handle::HasRawWindowHandle;
+use bevy::window::{RawHandleWrapper, Window, WindowDescriptor, WindowId};
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::platform::windows::WindowBuilderExtWindows;
-use super::windows_voodoo::get_workerw;
 
 #[derive(Debug, Default)]
 pub struct WinitWindows {
@@ -31,8 +31,7 @@ impl WinitWindows {
             .with_maximized(true)
             .with_decorations(false)
             .build(&event_loop)
-            .expect("can create window")
-            ;
+            .expect("can create window");
         let winit_id: winit::window::WindowId = unsafe { std::mem::transmute(parent) };
 
         self.window_id_to_winit.insert(window_id, winit_id);
@@ -44,7 +43,8 @@ impl WinitWindows {
             .map(|position| IVec2::new(position.x, position.y));
         let inner_size = winit_window.inner_size();
         let scale_factor = winit_window.scale_factor();
-        let raw_window_handle = winit_window.raw_window_handle();
+        let display_handle = winit_window.raw_display_handle();
+        let window_handle = winit_window.raw_window_handle();
         self.windows.insert(winit_id, winit_window);
         Window::new(
             window_id,
@@ -53,7 +53,10 @@ impl WinitWindows {
             inner_size.height,
             scale_factor,
             position,
-            raw_window_handle,
+            Some(RawHandleWrapper {
+                display_handle: display_handle,
+                window_handle: window_handle,
+            }),
         )
     }
 
@@ -87,7 +90,9 @@ pub fn get_fitting_videomode(
         match abs_diff(a.size().width, width).cmp(&abs_diff(b.size().width, width)) {
             Equal => {
                 match abs_diff(a.size().height, height).cmp(&abs_diff(b.size().height, height)) {
-                    Equal => b.refresh_rate().cmp(&a.refresh_rate()),
+                    Equal => b
+                        .refresh_rate_millihertz()
+                        .cmp(&a.refresh_rate_millihertz()),
                     default => default,
                 }
             }
@@ -104,7 +109,9 @@ pub fn get_best_videomode(monitor: &winit::monitor::MonitorHandle) -> winit::mon
         use std::cmp::Ordering::*;
         match b.size().width.cmp(&a.size().width) {
             Equal => match b.size().height.cmp(&a.size().height) {
-                Equal => b.refresh_rate().cmp(&a.refresh_rate()),
+                Equal => b
+                    .refresh_rate_millihertz()
+                    .cmp(&a.refresh_rate_millihertz()),
                 default => default,
             },
             default => default,
